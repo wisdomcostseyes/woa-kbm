@@ -16,6 +16,7 @@ $plugin = "$stage\BepInEx\plugins\WoaKbm"
 New-Item -ItemType Directory -Force "$plugin\keys" | Out-Null
 Copy-Item $dll $plugin
 Copy-Item "$root\assets\keys\*.png" "$plugin\keys"
+Copy-Item "$root\assets\keys\*.json" "$plugin\keys"
 Copy-Item "$root\README.md" "$stage\WoaKbm-README.md"
 Copy-Item "$root\LICENSE" "$stage\WoaKbm-LICENSE.txt"
 

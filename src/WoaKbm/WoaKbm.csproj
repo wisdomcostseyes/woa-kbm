@@ -45,6 +45,10 @@
       <HintPath>$(ManagedDir)\Unity.InputSystem.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.JSONSerializeModule">
+      <HintPath>$(ManagedDir)\UnityEngine.JSONSerializeModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.ImageConversionModule">
       <HintPath>$(ManagedDir)\UnityEngine.ImageConversionModule.dll</HintPath>
       <Private>false</Private>
@@ -76,7 +80,7 @@
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PluginOutDir)" />
     <Copy SourceFiles="$(TargetDir)$(AssemblyName).pdb" DestinationFolder="$(PluginOutDir)" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
     <ItemGroup>
-      <KeyImages Include="$(MSBuildProjectDirectory)\..\..\assets\keys\*.png" />
+      <KeyImages Include="$(MSBuildProjectDirectory)\..\..\assets\keys\*.png;$(MSBuildProjectDirectory)\..\..\assets\keys\*.json" />
     </ItemGroup>
     <Copy SourceFiles="@(KeyImages)" DestinationFolder="$(PluginOutDir)\keys" />
     <Message Importance="high" Text="Deployed $(AssemblyName).dll to $(PluginOutDir)" />

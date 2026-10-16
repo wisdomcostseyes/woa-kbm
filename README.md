@@ -2,16 +2,22 @@
 
 Keyboard and mouse support, with matching on-screen key prompts, for **Harvest Moon: The Winds of Anthos** (Steam).
 
-Somebody shipped a PC port of a farming game in the year of our lord 2023 and decided that the keyboard, a device
-that has been attached to every PC since before the first Harvest Moon existed, was an optional accessory. The Steam
-page says so with a straight face: *"requires a controller."* The engine supports keyboards. The game's own input
+Somebody shipped a PC port of a farming game in the year of our lord and savior 2023 and decided that the keyboard, a
+device that has been attached to every PC since before the first Harvest Moon existed, was an optional accessory. The
+Steam page says so with a straight face: *"requires a controller."* The engine supports keyboards. The game's own input
 asset still has the template's WASD bindings sitting in it, unused. Somebody simply wrote a list of allowed devices and
 left the keyboard off it. That's the entire reason you couldn't play this with the thing you typed the Steam search
 query on.
 
-This mod puts the keyboard back on the list, wires up a sensible layout, and swaps every controller glyph for a key cap
-drawn in the game's own style whenever you're using the keyboard, switching back to pad glyphs the moment you touch
-a controller. The developers get the credit for the game; the keyboard gets its dignity back.
+It's of a piece with the rest of the port. There is no settings menu worth the name: no resolution, no UI scale, no
+key binding, nothing a PC release has had as table stakes since the nineties. The UI is sized for a handheld screen
+and stays that way on a monitor. The patch notes, when they come, say "bug fixes." A review on the store page sums it
+up: *"a PC port without no thought or effort. I wasted my money so you don't have to."*
+
+This mod can't fix the port, but it puts the keyboard back on the list, wires up a sensible layout, and swaps every
+controller glyph for a key cap drawn in the game's own style whenever you're using the keyboard, switching back to pad
+glyphs the moment you touch a controller. The developers get the credit for the game; the keyboard gets its dignity
+back.
 
 ## Install
 
@@ -64,8 +70,10 @@ Unity Input System path such as `<Mouse>/leftButton`. Prompts follow your bindin
   `*/{Cancel}`) and carries per-layout bindings. `KbmInjector.cs` canonicalises every action on the Xbox layout and adds
   keyboard/mouse bindings beside each gamepad binding; control schemes are removed so pad, keyboard and mouse coexist.
 - **Prompts.** Every glyph is a UI `Image` whose sprite is named `ui_common_icon_guide_*`. A hook on `Image.sprite`
-  swaps in the matching PNG from `keys\` (exact original name first, then `Label.variant.png`, then `Label.png`, then
-  a drawn fallback). Text prompts go through `MessageManager.GetKeyAction` and a `TMP_Text.text` rewrite. See `Prompts.cs`.
+  swaps in the matching blank shape from `keys\` (one PNG per original sprite name) and renders the key names into the
+  boxes listed in the PNG's `.json` sidecar, using the game's own font. Because the labels are drawn at runtime from
+  the config, remapping a key updates every prompt. Text prompts go through `MessageManager.GetKeyAction` and a
+  `TMP_Text.text` rewrite. See `Prompts.cs`.
 - **Startup rule.** Nothing may touch `UnityEngine.InputSystem` or register the prompt patches from the BepInEx
   chainloader: the game hangs at "Using Windows.Gaming.Input". Both happen from the `InputSystemManager.Awake` prefix.
 - **Exit crash.** BepInEx 5.4.23 crashes this game on exit even with no plugins (MonoMod issue #329: on newer x86
@@ -79,17 +87,17 @@ Unity Input System path such as `<Mouse>/leftButton`. Prompts follow your bindin
   csproj or pass `-p:GameDir=...`).
 - `tools\deploy.ps1` builds and copies the DLL plus `assets\keys` into the game (game must be closed).
 - `tools\package.ps1` builds `dist\WoaKbm-<version>.zip` for release.
-- `tools\make_keycaps.ps1` regenerates the key images from `assets\glyph_map.csv` (needs the game's glyph sprites
-  dumped to `reference\glyphs` via the `DumpGlyphs` config option, and the FOT-Seurat Pro B font installed).
-  `tools\keycap_groups.ps1` renders a review sheet.
+- `tools\make_keycaps.ps1` regenerates the blank shapes and their `.json` label sidecars (needs the game's glyph
+  sprites dumped to `reference\glyphs` via the `DumpGlyphs` config option). `tools\keycap_groups.ps1` renders a review
+  sheet.
 
 ## Layout
 
 | Path | What |
 |---|---|
 | `src/WoaKbm/` | Plugin source (C#, .NET Standard 2.1, BepInEx 5 + HarmonyX). |
-| `assets/keys/` | Key prompt images, one per original glyph sprite name. |
-| `assets/glyph_map.csv` | Original glyph → key label mapping that drives the generator. |
+| `assets/keys/` | Blank key shapes, one per original glyph sprite name, each with a `.json` label layout. |
+| `assets/glyph_map.csv` | Original glyph → control/label reference table. |
 | `tools/` | Build, deploy, package and glyph-generation scripts. |
 
 `reference/` (decompiled game code, dumped assets) and `archive/` are local only and git-ignored.

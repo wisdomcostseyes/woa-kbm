@@ -96,9 +96,23 @@ namespace WoaKbm
                     var p = KbmInjector.Split(cfg.RightStick.Value).ToArray();
                     return p.Length == 4 ? ForPath(p[2]) + ForPath(p[3]) : "Mouse";
                 }
+                case "leftStick/up": return StickPart(cfg.LeftStick.Value, 0);
+                case "leftStick/down": return StickPart(cfg.LeftStick.Value, 1);
+                case "leftStick/left": return StickPart(cfg.LeftStick.Value, 2);
+                case "leftStick/right": return StickPart(cfg.LeftStick.Value, 3);
+                case "rightStick/up": return StickPart(cfg.RightStick.Value, 0);
+                case "rightStick/down": return StickPart(cfg.RightStick.Value, 1);
+                case "rightStick/left": return StickPart(cfg.RightStick.Value, 2);
+                case "rightStick/right": return StickPart(cfg.RightStick.Value, 3);
                 default: return "?";
             }
             return ForPath(First(raw));
+        }
+
+        private static string StickPart(string raw, int idx)
+        {
+            var p = KbmInjector.Split(raw).ToArray();
+            return p.Length == 4 ? ForPath(p[idx]) : "?";
         }
 
         private static string Stick(string u, string d, string l, string r)
@@ -207,9 +221,49 @@ namespace WoaKbm
         }
     }
 
+    /// <summary>Sidecar describing where the labels go on a blank glyph shape (pixel boxes, top-left origin).</summary>
+    [Serializable]
+    internal class GlyphLayout
+    {
+        public int[] canvas;
+        public GlyphLabelBox[] labels;
+    }
+
+    [Serializable]
+    internal class GlyphLabelBox
+    {
+        public string control;
+        public float x, y, w, h;
+    }
+
     /// <summary>Dumps the game's glyph sprites to PNG and loads user-supplied replacement key images.</summary>
     internal static class GlyphAssets
     {
+        private static readonly Dictionary<string, GlyphLayout> _layouts = new Dictionary<string, GlyphLayout>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>The label layout for an original glyph, from "&lt;original name&gt;.json" next to the image; null if none.</summary>
+        public static GlyphLayout LayoutFor(Sprite like)
+        {
+            if (like == null) return null;
+            string name = CleanSpriteName(like.name);
+            if (_layouts.TryGetValue(name, out var cached)) return cached;
+            GlyphLayout layout = null;
+            try
+            {
+                string path = System.IO.Path.Combine(CustomDir, name + ".json");
+                if (System.IO.File.Exists(path))
+                {
+                    layout = JsonUtility.FromJson<GlyphLayout>(System.IO.File.ReadAllText(path));
+                }
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning("Bad glyph sidecar for " + name + ": " + e.Message);
+            }
+            _layouts[name] = layout;
+            return layout;
+        }
+
         private static bool _dumpedAll;
         private static readonly HashSet<string> _dumped = new HashSet<string>();
         private static readonly Dictionary<string, Sprite> _custom = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
@@ -598,7 +652,7 @@ namespace WoaKbm
         private Image _image;
         private Sprite _glyph;
         private string _control;
-        private TMP_Text _label;
+        private readonly List<TMP_Text> _labels = new List<TMP_Text>();
 
         /// <summary>Called whenever an Image gets a sprite or is enabled.</summary>
         public static void Consider(Image image)
@@ -668,9 +722,17 @@ namespace WoaKbm
 
         private void Detach()
         {
-            if (_label != null) _label.gameObject.SetActive(false);
+            HideLabels(0);
             _control = null;
             _glyph = null;
+        }
+
+        private void HideLabels(int fromIndex)
+        {
+            for (int i = fromIndex; i < _labels.Count; i++)
+            {
+                if (_labels[i] != null) _labels[i].gameObject.SetActive(false);
+            }
         }
 
         private void Apply(bool kbm)
@@ -686,25 +748,49 @@ namespace WoaKbm
                     if (custom != null)
                     {
                         _image.sprite = custom;
-                        if (_label != null) _label.gameObject.SetActive(false);
+                        // Blank shape + sidecar: render one label per box with the current bindings,
+                        // so remapping keys updates every prompt. No sidecar = image carries its own label.
+                        var layout = GlyphAssets.LayoutFor(_glyph);
+                        if (layout != null && layout.labels != null && layout.canvas != null && layout.canvas.Length == 2)
+                        {
+                            float W = layout.canvas[0], H = layout.canvas[1];
+                            for (int i = 0; i < layout.labels.Length; i++)
+                            {
+                                var box = layout.labels[i];
+                                var label = EnsureLabel(i);
+                                var rt = (RectTransform)label.transform;
+                                rt.anchorMin = new Vector2(box.x / W, 1f - (box.y + box.h) / H);
+                                rt.anchorMax = new Vector2((box.x + box.w) / W, 1f - box.y / H);
+                                rt.offsetMin = Vector2.zero;
+                                rt.offsetMax = Vector2.zero;
+                                label.text = "<nobr>" + KeyLabels.ForControl(box.control) + "</nobr>";
+                                label.gameObject.SetActive(true);
+                            }
+                            HideLabels(layout.labels.Length);
+                        }
+                        else
+                        {
+                            HideLabels(0);
+                        }
                         return;
                     }
                     _image.sprite = KeycapSprite.Like(_glyph, text.Length <= 1);
-                    var label = EnsureLabel();
+                    var single = EnsureLabel(0);
                     // Centre the label on the drawn cap, with a little inset.
                     var cf = KeycapSprite.CapFraction(_glyph) * 0.8f;
-                    var rt = (RectTransform)label.transform;
-                    rt.anchorMin = new Vector2(0.5f - cf.x / 2f, 0.5f - cf.y / 2f);
-                    rt.anchorMax = new Vector2(0.5f + cf.x / 2f, 0.5f + cf.y / 2f);
-                    rt.offsetMin = Vector2.zero;
-                    rt.offsetMax = Vector2.zero;
-                    label.text = "<nobr>" + KeyLabels.ForControl(_control) + "</nobr>";
-                    label.gameObject.SetActive(true);
+                    var srt = (RectTransform)single.transform;
+                    srt.anchorMin = new Vector2(0.5f - cf.x / 2f, 0.5f - cf.y / 2f);
+                    srt.anchorMax = new Vector2(0.5f + cf.x / 2f, 0.5f + cf.y / 2f);
+                    srt.offsetMin = Vector2.zero;
+                    srt.offsetMax = Vector2.zero;
+                    single.text = "<nobr>" + text + "</nobr>";
+                    single.gameObject.SetActive(true);
+                    HideLabels(1);
                 }
                 else
                 {
                     if (_glyph != null) _image.sprite = _glyph;
-                    if (_label != null) _label.gameObject.SetActive(false);
+                    HideLabels(0);
                 }
             }
             finally
@@ -713,10 +799,11 @@ namespace WoaKbm
             }
         }
 
-        private TMP_Text EnsureLabel()
+        private TMP_Text EnsureLabel(int index)
         {
-            if (_label != null) return _label;
-            var go = new GameObject("WoaKbmKeyLabel", typeof(RectTransform));
+            while (_labels.Count <= index) _labels.Add(null);
+            if (_labels[index] != null) return _labels[index];
+            var go = new GameObject("WoaKbmKeyLabel" + index, typeof(RectTransform));
             go.transform.SetParent(_image.transform, false);
             var rt = (RectTransform)go.transform;
             rt.anchorMin = Vector2.zero;
@@ -734,10 +821,10 @@ namespace WoaKbm
             if (font != null) t.font = font;
             t.alignment = TextAlignmentOptions.Center;
             t.enableAutoSizing = true;
-            t.fontSizeMin = 4f;
+            t.fontSizeMin = 2f;
             t.fontSizeMax = 200f;
-            t.fontStyle = FontStyles.Bold;
-            t.color = new Color(0.98f, 0.95f, 0.85f, 1f);
+            t.fontStyle = FontStyles.Normal; // the game's font asset is already the bold cut
+            t.color = new Color32(239, 231, 181, 255); // the game's glyph cream
             t.raycastTarget = false;
             t.textWrappingMode = TextWrappingModes.NoWrap;
 #pragma warning disable CS0618
@@ -745,7 +832,8 @@ namespace WoaKbm
 #pragma warning restore CS0618
             t.overflowMode = TextOverflowModes.Overflow;
             t.characterSpacing = -2f;
-            _label = t;
+            t.margin = Vector4.zero;
+            _labels[index] = t;
             return t;
         }
     }
