@@ -13,7 +13,7 @@ namespace WoaKbm
     {
         public const string GUID = "danreed.woa.kbm";
         public const string NAME = "Winds of Anthos Keyboard & Mouse";
-        public const string VERSION = "1.0.0";
+        public const string VERSION = "0.0.1";
 
         internal static ManualLogSource Log;
         internal static KbmConfig Cfg;
