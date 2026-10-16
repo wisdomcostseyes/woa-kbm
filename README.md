@@ -19,6 +19,9 @@ controller glyph for a key cap drawn in the game's own style whenever you're usi
 glyphs the moment you touch a controller. The developers get the credit for the game; the keyboard gets its dignity
 back.
 
+Download: [Nexus Mods](https://www.nexusmods.com/harvestmoonthewindsofanthos/mods/5) or the
+[GitHub releases](https://github.com/itsdanreed/woa-kbm/releases).
+
 ## Install
 
 1. Install **BepInEx 5 (x86)**: download `BepInEx_win_x86_5.4.23.5.zip` from the
