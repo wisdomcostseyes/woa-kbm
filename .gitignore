@@ -1,0 +1,14 @@
+# build output
+bin/
+obj/
+dist/
+*.user
+
+# game-derived data (decompiled code, dumped assets) - not redistributable
+reference/
+
+# local scratch and earlier attempts
+archive/
+
+# third-party binaries (download BepInEx from its releases page)
+*.zip
