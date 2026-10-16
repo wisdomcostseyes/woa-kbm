@@ -53,7 +53,7 @@ and the `BepInEx` folder.
 | Walk instead of run | hold **Ctrl** |
 | Release the mouse cursor | hold **Alt** |
 
-The buttons are remappable in `BepInEx\config\danreed.woa.kbm.cfg` (created on first launch). Each entry lists keys
+The buttons are remappable in `BepInEx\config\WindsOfAnthos.KeyboardMouse.cfg` (created on first launch). Each entry lists keys
 separated by `;`; a bare name is a keyboard key (`e`, `leftShift`, `upArrow`...), anything in angle brackets is a raw
 Unity Input System path such as `<Mouse>/leftButton`. Prompts follow your bindings automatically. Movement (WASD)
 and the directional keys (arrows) are fixed, because their prompts are drawn as a WASD cluster and an arrow cross.
@@ -106,4 +106,5 @@ and the directional keys (arrows) are fixed, because their prompts are drawn as 
 ## License
 
 MIT. The key images are original drawings made for this mod; no game assets are redistributed.
+
 

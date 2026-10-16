@@ -11,7 +11,7 @@ namespace WoaKbm
     [BepInPlugin(GUID, NAME, VERSION)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string GUID = "danreed.woa.kbm";
+        public const string GUID = "WindsOfAnthos.KeyboardMouse";
         public const string NAME = "Winds of Anthos Keyboard & Mouse";
         public const string VERSION = "0.0.1";
 
@@ -359,5 +359,6 @@ namespace WoaKbm
         }
     }
 }
+
 
 
