@@ -179,7 +179,12 @@ foreach ($f in Get-ChildItem $Glyphs -Filter "ui_common_icon_guide_*.png" | Wher
         if (-not $box.Round) { $w = $bw; $h = $bh }
         $x = $bx + ($bw - $w) / 2; $y = $by + ($bh - $h) / 2
         # stick glyphs carry a press arrow above the ring: centre the cap on the ring (centre of mass), not the box top
-        if ($isStick) { $x = $box.CX - $w / 2; $y = $box.CY - $h / 2 }
+        if ($isStick) {
+            # a single cap on a stick slot: align with the face-button caps on the same canvas rather than the
+            # stick ring, which the game draws ~1.5px higher; the whole prompt bar then shares one baseline
+            $x = $box.CX - $w / 2; $y = $box.CY - $h / 2
+            if ($box.W -eq 40 -and $box.H -eq 60) { $y = 40.5 - $h / 2 }
+        }
         $lb = Draw-Cap $g $x $y $w $h $solid $stroke $box.Round
         $lb.control = $control
         $labels += $lb
@@ -207,5 +212,6 @@ for ($i = 0; $i -lt $count; $i++) {
 }
 $sg.Dispose(); $sheet.Save($Preview); $sheet.Dispose()
 Write-Host "preview: $Preview"
+
 
 
