@@ -241,6 +241,34 @@ namespace WoaKbm
     {
         private static readonly Dictionary<string, GlyphLayout> _layouts = new Dictionary<string, GlyphLayout>(StringComparer.OrdinalIgnoreCase);
 
+        // The sidecar format is fixed and flat: {"canvas":[W,H],"labels":[{"control":"...","x":..,"y":..,"w":..,"h":..},...]}
+        private static readonly System.Text.RegularExpressions.Regex CanvasRx =
+            new System.Text.RegularExpressions.Regex(@"""canvas""\s*:\s*\[\s*(\d+)\s*,\s*(\d+)\s*\]");
+        private static readonly System.Text.RegularExpressions.Regex BoxRx =
+            new System.Text.RegularExpressions.Regex(@"\{\s*""control""\s*:\s*""([^""]+)""\s*,\s*""x""\s*:\s*([-\d.]+)\s*,\s*""y""\s*:\s*([-\d.]+)\s*,\s*""w""\s*:\s*([-\d.]+)\s*,\s*""h""\s*:\s*([-\d.]+)\s*\}");
+
+        private static GlyphLayout ParseLayout(string json)
+        {
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            var cm = CanvasRx.Match(json);
+            if (!cm.Success) return null;
+            var layout = new GlyphLayout { canvas = new[] { int.Parse(cm.Groups[1].Value, inv), int.Parse(cm.Groups[2].Value, inv) } };
+            var boxes = new List<GlyphLabelBox>();
+            foreach (System.Text.RegularExpressions.Match m in BoxRx.Matches(json))
+            {
+                boxes.Add(new GlyphLabelBox
+                {
+                    control = m.Groups[1].Value,
+                    x = float.Parse(m.Groups[2].Value, inv),
+                    y = float.Parse(m.Groups[3].Value, inv),
+                    w = float.Parse(m.Groups[4].Value, inv),
+                    h = float.Parse(m.Groups[5].Value, inv),
+                });
+            }
+            layout.labels = boxes.ToArray();
+            return layout;
+        }
+
         /// <summary>The label layout for an original glyph, from "&lt;original name&gt;.json" next to the image; null if none.</summary>
         public static GlyphLayout LayoutFor(Sprite like)
         {
@@ -253,7 +281,7 @@ namespace WoaKbm
                 string path = System.IO.Path.Combine(CustomDir, name + ".json");
                 if (System.IO.File.Exists(path))
                 {
-                    layout = JsonUtility.FromJson<GlyphLayout>(System.IO.File.ReadAllText(path));
+                    layout = ParseLayout(System.IO.File.ReadAllText(path));
                 }
             }
             catch (Exception e)
@@ -653,6 +681,7 @@ namespace WoaKbm
         private Sprite _glyph;
         private string _control;
         private readonly List<TMP_Text> _labels = new List<TMP_Text>();
+        private static readonly HashSet<string> _diagLogged = new HashSet<string>();
 
         /// <summary>Called whenever an Image gets a sprite or is enabled.</summary>
         public static void Consider(Image image)
@@ -751,9 +780,15 @@ namespace WoaKbm
                         // Blank shape + sidecar: render one label per box with the current bindings,
                         // so remapping keys updates every prompt. No sidecar = image carries its own label.
                         var layout = GlyphAssets.LayoutFor(_glyph);
+                        if (_diagLogged.Add(_glyph.name))
+                        {
+                            Plugin.Log.LogInfo("Overlay " + _glyph.name + ": layout=" + (layout == null ? "null" : (layout.labels == null ? "nolabels" : layout.labels.Length.ToString()))
+                                + " canvas=" + (layout?.canvas == null ? "null" : string.Join("x", layout.canvas)) + " imageRect=" + _image.rectTransform.rect.size);
+                        }
                         if (layout != null && layout.labels != null && layout.canvas != null && layout.canvas.Length == 2)
                         {
                             float W = layout.canvas[0], H = layout.canvas[1];
+                            var rect = _image.rectTransform.rect;
                             for (int i = 0; i < layout.labels.Length; i++)
                             {
                                 var box = layout.labels[i];
@@ -763,7 +798,7 @@ namespace WoaKbm
                                 rt.anchorMax = new Vector2((box.x + box.w) / W, 1f - box.y / H);
                                 rt.offsetMin = Vector2.zero;
                                 rt.offsetMax = Vector2.zero;
-                                label.text = "<nobr>" + KeyLabels.ForControl(box.control) + "</nobr>";
+                                FitLabel(label, KeyLabels.ForControl(box.control), box.w * rect.width / W, box.h * rect.height / H);
                                 label.gameObject.SetActive(true);
                             }
                             HideLabels(layout.labels.Length);
@@ -783,7 +818,8 @@ namespace WoaKbm
                     srt.anchorMax = new Vector2(0.5f + cf.x / 2f, 0.5f + cf.y / 2f);
                     srt.offsetMin = Vector2.zero;
                     srt.offsetMax = Vector2.zero;
-                    single.text = "<nobr>" + text + "</nobr>";
+                    var r = _image.rectTransform.rect;
+                    FitLabel(single, text, cf.x * r.width, cf.y * r.height);
                     single.gameObject.SetActive(true);
                     HideLabels(1);
                 }
@@ -797,6 +833,26 @@ namespace WoaKbm
             {
                 Applying = false;
             }
+        }
+
+        /// <summary>
+        /// Size a label to its box explicitly. TMP's auto-size won't shrink to width with wrapping off, and with
+        /// wrapping on it breaks words, so measure once at a reference size and scale.
+        /// </summary>
+        private static void FitLabel(TMP_Text label, string text, float boxW, float boxH)
+        {
+            label.enableAutoSizing = false;
+            label.text = text;
+            if (boxW <= 0f || boxH <= 0f) { label.fontSize = 1f; return; }
+            const float refSize = 100f;
+            label.fontSize = refSize;
+            var pv = label.GetPreferredValues(text);
+            if (pv.x <= 0f || pv.y <= 0f) { label.fontSize = boxH; return; }
+            // The measured height is a full line (ascender to descender); the visible capitals are ~60% of it.
+            // Matching the line box to the label box gives letters at ~60% of the box, like the game's own glyphs.
+            float byHeight = refSize * boxH / pv.y;
+            float byWidth = refSize * (boxW * 0.95f) / pv.x;
+            label.fontSize = Mathf.Max(1f, Mathf.Min(byHeight, byWidth));
         }
 
         private TMP_Text EnsureLabel(int index)
@@ -819,10 +875,12 @@ namespace WoaKbm
                 if (sibling != null) font = sibling.font;
             }
             if (font != null) t.font = font;
+            if (index == 0 && _diagLogged.Add("font:" + (font != null ? font.name : "null")))
+            {
+                Plugin.Log.LogInfo("Label font: " + (font != null ? font.name : "null (TMP default)"));
+            }
             t.alignment = TextAlignmentOptions.Center;
-            t.enableAutoSizing = true;
-            t.fontSizeMin = 2f;
-            t.fontSizeMax = 200f;
+            t.enableAutoSizing = false;
             t.fontStyle = FontStyles.Normal; // the game's font asset is already the bold cut
             t.color = new Color32(239, 231, 181, 255); // the game's glyph cream
             t.raycastTarget = false;

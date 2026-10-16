@@ -100,13 +100,20 @@ namespace WoaKbm
         public readonly ConfigEntry<string> RightStickPress;
         public readonly ConfigEntry<string> Start;
         public readonly ConfigEntry<string> Select;
-        public readonly ConfigEntry<string> DpadUp;
-        public readonly ConfigEntry<string> DpadDown;
-        public readonly ConfigEntry<string> DpadLeft;
-        public readonly ConfigEntry<string> DpadRight;
-        // Sticks: exactly four entries "up;down;left;right" (keyboard keys only). Empty = no keyboard binding.
-        public readonly ConfigEntry<string> LeftStick;
-        public readonly ConfigEntry<string> RightStick;
+        // Directions are fixed: the prompt glyphs are drawn as a WASD cluster and an arrow cross, so these
+        // can't be rebound without the pictures lying. (Camera look is the mouse regardless.)
+        public readonly FixedEntry DpadUp = new FixedEntry("upArrow");
+        public readonly FixedEntry DpadDown = new FixedEntry("downArrow");
+        public readonly FixedEntry DpadLeft = new FixedEntry("leftArrow");
+        public readonly FixedEntry DpadRight = new FixedEntry("rightArrow");
+        public readonly FixedEntry LeftStick = new FixedEntry("w;s;a;d");
+        public readonly FixedEntry RightStick = new FixedEntry("upArrow;downArrow;leftArrow;rightArrow");
+
+        internal class FixedEntry
+        {
+            public readonly string Value;
+            public FixedEntry(string v) { Value = v; }
+        }
 
         public KbmConfig(ConfigFile f)
         {
@@ -159,16 +166,10 @@ namespace WoaKbm
             RightShoulder   = f.Bind("Keys", "RB (rightShoulder)",    "e", "Sneak / next tab");
             LeftTrigger     = f.Bind("Keys", "LT (leftTrigger)",      "z;<Mouse>/scroll/up", "Camera zoom in / previous tab");
             RightTrigger    = f.Bind("Keys", "RT (rightTrigger)",     "leftShift;<Mouse>/scroll/down", "Dash / camera zoom out / next tab");
-            LeftStickPress  = f.Bind("Keys", "L3 (leftStickPress)",   "home;<Mouse>/middleButton", "Reset camera");
+            LeftStickPress  = f.Bind("Keys", "L3 (leftStickPress)",   "c;<Mouse>/middleButton", "Reset camera");
             RightStickPress = f.Bind("Keys", "R3 (rightStickPress)",  "v", "Top-down camera");
             Start           = f.Bind("Keys", "Start",                 "escape", "Open menu / options");
             Select          = f.Bind("Keys", "Select",                "m", "Doc pad / album");
-            DpadUp          = f.Bind("Keys", "D-pad up",              "upArrow", "");
-            DpadDown        = f.Bind("Keys", "D-pad down",            "downArrow", "");
-            DpadLeft        = f.Bind("Keys", "D-pad left",            "leftArrow", "");
-            DpadRight       = f.Bind("Keys", "D-pad right",           "rightArrow", "");
-            LeftStick       = f.Bind("Keys", "Left stick",            "w;s;a;d", "Move / menu navigation as up;down;left;right");
-            RightStick      = f.Bind("Keys", "Right stick",           "upArrow;downArrow;leftArrow;rightArrow", "Right stick in menus (category/value selectors) as up;down;left;right keys. Camera look always uses the mouse and ignores this.");
         }
     }
 
@@ -358,4 +359,5 @@ namespace WoaKbm
         }
     }
 }
+
 

@@ -1,4 +1,4 @@
-# Winds of Anthos: Keyboard & Mouse
+﻿# Winds of Anthos: Keyboard & Mouse
 
 Keyboard and mouse support, with matching on-screen key prompts, for **Harvest Moon: The Winds of Anthos** (Steam).
 
@@ -46,16 +46,17 @@ and the `BepInEx` folder.
 | Previous / next tab, photo mode, sneak | **Q** / **E** |
 | Dash | **Shift** (hold) |
 | Camera zoom in / out | **Z** / mouse wheel |
-| Camera reset / top-down view | **Home** (or middle click) / **V** |
+| Camera reset / top-down view | **C** (or middle click) / **V** |
 | Menu / options | **Esc** |
 | DocPad | **M** |
 | Quick actions (d-pad), menu selectors | Arrow keys |
 | Walk instead of run | hold **Ctrl** |
 | Release the mouse cursor | hold **Alt** |
 
-Everything is remappable in `BepInEx\config\danreed.woa.kbm.cfg` (created on first launch). Each entry lists keys
+The buttons are remappable in `BepInEx\config\danreed.woa.kbm.cfg` (created on first launch). Each entry lists keys
 separated by `;`; a bare name is a keyboard key (`e`, `leftShift`, `upArrow`...), anything in angle brackets is a raw
-Unity Input System path such as `<Mouse>/leftButton`. Prompts follow your bindings automatically.
+Unity Input System path such as `<Mouse>/leftButton`. Prompts follow your bindings automatically. Movement (WASD)
+and the directional keys (arrows) are fixed, because their prompts are drawn as a WASD cluster and an arrow cross.
 
 ## Known limits
 
@@ -97,7 +98,7 @@ Unity Input System path such as `<Mouse>/leftButton`. Prompts follow your bindin
 |---|---|
 | `src/WoaKbm/` | Plugin source (C#, .NET Standard 2.1, BepInEx 5 + HarmonyX). |
 | `assets/keys/` | Blank key shapes, one per original glyph sprite name, each with a `.json` label layout. |
-| `assets/glyph_map.csv` | Original glyph → control/label reference table. |
+| `assets/glyph_map.csv` | Original glyph â†’ control/label reference table. |
 | `tools/` | Build, deploy, package and glyph-generation scripts. |
 
 `reference/` (decompiled game code, dumped assets) and `archive/` are local only and git-ignored.
@@ -105,3 +106,4 @@ Unity Input System path such as `<Mouse>/leftButton`. Prompts follow your bindin
 ## License
 
 MIT. The key images are original drawings made for this mod; no game assets are redistributed.
+

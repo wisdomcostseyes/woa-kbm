@@ -91,8 +91,16 @@ function Get-ArtBox($path) {
         for ($xx = $x0; $xx -le $x1; $xx++) { if ($b.GetPixel($xx, $yy).A -gt 120) { if ($lo -lt 0) { $lo = $xx }; $hi = $xx } }
         if ($lo -ge 0) { $span = ($hi - $lo + 1) / $bw; if ($span -gt $best) { $best = $span } }
     }
+    # ring centre: midpoint of the widest solid row (the ring is the widest feature of every stick glyph;
+    # bases below and press arrows above are narrower, so this ignores them)
+    $wide = 0; $wideY = 0; $wideLo = 0; $wideHi = 0
+    for ($yy = 0; $yy -lt $b.Height; $yy++) {
+        $lo = -1; $hi = -1
+        for ($xx = 0; $xx -lt $b.Width; $xx++) { if ($b.GetPixel($xx, $yy).A -gt 120) { if ($lo -lt 0) { $lo = $xx }; $hi = $xx } }
+        if ($lo -ge 0 -and ($hi - $lo) -gt $wide) { $wide = $hi - $lo; $wideY = $yy; $wideLo = $lo; $wideHi = $hi }
+    }
     $r = @{ W = $b.Width; H = $b.Height; X = $minX; Y = $minY; BW = ($maxX - $minX + 1); BH = ($maxY - $minY + 1); Round = ($best -lt 0.8)
-            CX = $(if ($sn) { $sx / $sn + 0.5 } else { $b.Width / 2 }); CY = $(if ($sn) { $sy / $sn + 0.5 } else { $b.Height / 2 }) }
+            CX = (($wideLo + $wideHi) / 2 + 0.5); CY = ($wideY + 0.5) }
     $b.Dispose()
     return $r
 }
@@ -170,6 +178,8 @@ foreach ($f in Get-ChildItem $Glyphs -Filter "ui_common_icon_guide_*.png" | Wher
         $w = $side; $h = $side
         if (-not $box.Round) { $w = $bw; $h = $bh }
         $x = $bx + ($bw - $w) / 2; $y = $by + ($bh - $h) / 2
+        # stick glyphs carry a press arrow above the ring: centre the cap on the ring (centre of mass), not the box top
+        if ($isStick) { $x = $box.CX - $w / 2; $y = $box.CY - $h / 2 }
         $lb = Draw-Cap $g $x $y $w $h $solid $stroke $box.Round
         $lb.control = $control
         $labels += $lb
@@ -197,3 +207,5 @@ for ($i = 0; $i -lt $count; $i++) {
 }
 $sg.Dispose(); $sheet.Save($Preview); $sheet.Dispose()
 Write-Host "preview: $Preview"
+
+
