@@ -1,9 +1,17 @@
 # Winds of Anthos: Keyboard & Mouse
 
 Keyboard and mouse support, with matching on-screen key prompts, for **Harvest Moon: The Winds of Anthos** (Steam).
-The game ships controller-only. This mod makes it fully playable on keyboard and mouse and swaps every controller
-glyph for a key cap drawn in the game's own style whenever you're using the keyboard, switching back to pad glyphs
-the moment you touch a controller.
+
+Somebody shipped a PC port of a farming game in the year of our lord 2023 and decided that the keyboard, a device
+that has been attached to every PC since before the first Harvest Moon existed, was an optional accessory. The Steam
+page says so with a straight face: *"requires a controller."* The engine supports keyboards. The game's own input
+asset still has the template's WASD bindings sitting in it, unused. Somebody simply wrote a list of allowed devices and
+left the keyboard off it. That's the entire reason you couldn't play this with the thing you typed the Steam search
+query on.
+
+This mod puts the keyboard back on the list, wires up a sensible layout, and swaps every controller glyph for a key cap
+drawn in the game's own style whenever you're using the keyboard, switching back to pad glyphs the moment you touch
+a controller. The developers get the credit for the game; the keyboard gets its dignity back.
 
 ## Install
 
